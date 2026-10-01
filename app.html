@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BangCount - Lightning distance timer</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#14122b; color:#ecebfa; line-height:1.5; }
+  .wrap { max-width:640px; margin:0 auto; padding:26px 18px 60px; }
+  a { color:#ffd84d; } h1 { font-size:28px; } h1 span { color:#ffd84d; } .sub { color:#a9a6d4; margin:4px 0 18px; }
+  .card { background:#211e45; border-radius:14px; padding:16px; margin-bottom:14px; }
+  .btns { display:flex; gap:10px; } .btns button { flex:1; padding:22px 8px; border:0; border-radius:14px; font-size:22px; font-weight:800; cursor:pointer; }
+  #flash { background:#ffd84d; color:#14122b; } #bang { background:#6c63ff; color:#fff; } .btns button:disabled { opacity:.35; cursor:default; }
+  .clock { font-size:56px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:12px 0 2px; } .lbl { font-size:13px; color:#a9a6d4; }
+  .big { font-size:40px; font-weight:800; color:#ffd84d; } .pill { display:inline-block; padding:5px 12px; border-radius:99px; font-weight:700; font-size:14px; margin-top:6px; }
+  .overhead { background:#e2373f; color:#fff; } .range { background:#f0902f; color:#2b1800; } .far { background:#3b5e45; color:#e6f5ea; }
+  .note { font-size:14px; color:#cfcdf0; margin-top:8px; } h2 { font-size:17px; margin-bottom:8px; }
+  .link { background:none; border:1px solid #4a4680; color:#a9a6d4; border-radius:9px; padding:8px 14px; cursor:pointer; font-size:14px; margin-top:10px; }
+  input { width:90px; padding:8px; border-radius:8px; border:1px solid #4a4680; background:#14122b; color:#ecebfa; font-size:16px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { padding:6px 4px; border-bottom:1px solid #35316a; text-align:left; } th { color:#a9a6d4; font-weight:600; }
+  .small { font-size:13px; color:#a9a6d4; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bang<span>Count</span></h1>
+  <div class="sub">See the flash, tap FLASH. Hear the thunder, tap BANG.</div>
+  <div class="card">
+    <div class="btns"><button id="flash">FLASH</button><button id="bang" disabled>BANG</button></div>
+    <div class="clock" id="clock">0.0 s</div>
+    <div class="lbl" style="text-align:center" id="hint">Tap FLASH the moment you see lightning.</div>
+  </div>
+  <div class="card" id="res" style="display:none"></div>
+  <div class="card" id="clear" style="display:none"></div>
+  <div class="card" id="logcard" style="display:none"><h2>Strikes</h2><table id="log"></table><div class="note" id="trend"></div><button class="link" id="reset">Clear all</button></div>
+  <div class="card"><h2>How it works</h2>
+    <div class="small" style="margin-top:0">Light arrives at once. Sound takes about 5 seconds per mile (3 seconds per kilometre). Seconds divided by 5 is miles, divided by 3 is kilometres. Thunder is only heard within about 10 miles, so no bang after 50 seconds means the strike was probably farther than that. If you hear thunder, go inside, and wait 30 minutes after the last lightning or thunder before going back out.<br><br>
+    Optional air temperature for a finer estimate: <input id="temp" type="number" step="1" placeholder="&deg;C"> (speed of sound = 331.3 + 0.606 &times; &deg;C m/s, an approximation). The storm speed and arrival time are rough straight-line guesses from your last two strikes at least a minute apart.<br><br>
+    Sources: <a href="https://www.weather.gov/safety/lightning-science-thunder">NWS, thunder and distance</a>, <a href="https://www.noaa.gov/jetstream/lightning/lightning-safety">NOAA JetStream, lightning safety</a>, <a href="https://www.weather.gov/safety/lightning-safety-overview">NWS lightning safety</a>. Safety guidance only. <a href="index.html">About</a></div>
+  </div>
+</div>
+<script src="engine.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, strikes = [], flashAt = null, lastEvent = null;
+function now() { return window.__now != null ? window.__now : Date.now(); }
+function tempC() { var v = parseFloat($('temp').value); return isNaN(v) ? null : v; }
+function dist(sec) { var c = tempC(); return c == null ? { mi: Bang.miles(sec), km: Bang.km(sec) } : { mi: Bang.milesAt(sec, c), km: Bang.kmAt(sec, c) }; }
+function fmtMs(ms) { var s = Math.ceil(ms / 1000), m = Math.floor(s / 60); return m + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
+function tick() {
+  if (flashAt != null) $('clock').textContent = ((now() - flashAt) / 1000).toFixed(1) + ' s';
+  if (lastEvent != null) {
+    var r = Bang.remainingMs(lastEvent, now());
+    $('clear').style.display = 'block';
+    $('clear').innerHTML = r > 0 ? '<div class="lbl">Wait before going back outside</div><div class="big" id="cd">' + fmtMs(r) + '</div><div class="note">The 30 minute clock restarts at every new flash or thunder.</div>' : '<div class="lbl">30 minutes since the last lightning or thunder</div><div class="big" id="cd" style="color:#8fe3a4">Clear</div><div class="note">Go back out only if you see no new lightning and hear no thunder.</div>';
+  }
+}
+function renderLog() {
+  if (!strikes.length) { $('logcard').style.display = 'none'; return; }
+  $('logcard').style.display = 'block';
+  var h = '<tr><th>#</th><th>Seconds</th><th>Distance</th></tr>';
+  strikes.forEach(function (s, i) { var d = dist(s.sec); h += '<tr><td>' + (i + 1) + '</td><td>' + s.sec.toFixed(1) + '</td><td>' + d.mi.toFixed(1) + ' mi / ' + d.km.toFixed(1) + ' km</td></tr>'; });
+  $('log').innerHTML = h;
+  var tr = Bang.trend(strikes);
+  $('trend').innerHTML = tr ? (tr.dir === 'steady' ? 'The storm looks steady.' : tr.dir === 'approaching' ? 'Approaching at roughly ' + Math.round(tr.mph) + ' mph' + (tr.etaMin != null ? ', about ' + Math.round(tr.etaMin) + ' min away on a straight path.' : '.') : 'Moving away at roughly ' + Math.round(-tr.mph) + ' mph.') : 'Add a second strike at least a minute later to see which way it is moving.';
+}
+$('flash').onclick = function () { flashAt = now(); lastEvent = flashAt; $('flash').disabled = true; $('bang').disabled = false; $('hint').textContent = 'Counting. Tap BANG when you hear thunder.'; $('res').style.display = 'none'; };
+$('bang').onclick = function () {
+  var sec = (now() - flashAt) / 1000, d = dist(sec), z = Bang.zone(sec);
+  strikes.push({ t: flashAt, sec: sec }); lastEvent = now(); flashAt = null;
+  $('clock').textContent = sec.toFixed(1) + ' s'; $('flash').disabled = false; $('bang').disabled = true; $('hint').textContent = 'Tap FLASH for the next one.';
+  $('res').style.display = 'block'; $('res').innerHTML = '<div class="lbl">Lightning was about</div><div class="big" id="dist">' + d.mi.toFixed(1) + ' mi (' + d.km.toFixed(1) + ' km)</div><span class="pill ' + z.key + '" id="zone">' + z.label + '</span><div class="note">' + z.note + '</div>';
+  renderLog(); tick();
+};
+$('reset').onclick = function () { strikes = []; flashAt = null; lastEvent = null; $('clock').textContent = '0.0 s'; $('res').style.display = 'none'; $('clear').style.display = 'none'; $('flash').disabled = false; $('bang').disabled = true; $('hint').textContent = 'Tap FLASH the moment you see lightning.'; renderLog(); };
+$('temp').oninput = renderLog;
+setInterval(tick, 100);
+</script>
+</body>
+</html>
