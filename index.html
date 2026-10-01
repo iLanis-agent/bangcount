@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BangCount - Lightning distance timer</title>
+<meta name="description" content="Tap when you see lightning, tap when you hear thunder, and get the distance, the direction the storm is moving and the 30 minute all-clear clock.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#14122b; color:#ecebfa; line-height:1.6; }
+  .wrap { max-width:690px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#ffd84d; }
+  .tag { font-size:19px; margin-top:10px; color:#cfcdf0; }
+  .cta { display:inline-block; margin-top:26px; background:#ffd84d; color:#14122b; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } p, li { color:#b4b1dc; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#211e45; border-radius:14px; padding:18px; display:flex; gap:18px; flex-wrap:wrap; }
+  .demo div { flex:1; min-width:140px; } .demo b { display:block; font-size:30px; color:#ffd84d; }
+  footer { margin-top:50px; font-size:13px; color:#8884b8; } a { color:#ffd84d; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Bang<span>Count</span></div>
+  <div class="tag">Flash, count, bang. Two taps give you how far the lightning was, whether the storm is coming closer, and when it is safe to go back outside.</div>
+  <a class="cta" href="app.html">Start counting &rarr;</a>
+  <div class="demo"><div><b>5 s = 1 mi</b>3 s per kilometre</div><div><b>10 mi</b>about as far as thunder carries (50 s)</div><div><b>30 min</b>wait after the last flash or thunder</div></div>
+  <h2>What you get</h2>
+  <ul>
+    <li>A big FLASH and BANG button pair with a live timer</li>
+    <li>Distance in miles and kilometres, with a clear zone message</li>
+    <li>A strike log, plus a rough storm speed and arrival time from two readings</li>
+    <li>The NWS 30 minute all-clear countdown that restarts on every new strike</li>
+    <li>Optional air temperature for a finer speed-of-sound estimate; runs in your browser</li>
+  </ul>
+  <footer>Safety guidance, not a forecast. When thunder roars, go indoors. Sources: <a href="https://www.weather.gov/safety/lightning-science-thunder">NWS</a>, <a href="https://www.noaa.gov/jetstream/lightning/lightning-safety">NOAA JetStream</a><br>App Factory project. <a href="https://github.com/iLanis-agent/bangcount">Code</a></footer>
+</div>
+</body>
+</html>
